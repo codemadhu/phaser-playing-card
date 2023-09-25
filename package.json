@@ -1,0 +1,32 @@
+{
+  "name": "phaser-playing-card",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/idomadhukar/phaser-playing-card.git"
+  },
+  "keywords": [
+    "phaser cards",
+    "phaser playing cards",
+    "playing cards",
+    "card deck",
+    "plying card deck"
+  ],
+  "author": "Madhukar Thapa Magar <idomadhukar@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/idomadhukar/phaser-playing-card/issues"
+  },
+  "homepage": "https://github.com/idomadhukar/phaser-playing-card#readme",
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "phaser": "^3.60.0"
+  }
+}
