@@ -31,6 +31,12 @@ export class Card extends Phaser.GameObjects.Container {
     if (!this.isFlipping) this.flipAnimationTimeline.play();
   }
 
+  public getInfo(): { suit: string; rank: number; isFaceUp: boolean } {
+    const { suit, rank } = this.config;
+    const isFaceUp = this.isFaceUp;
+    return { suit, rank, isFaceUp };
+  }
+
   private createFlipAnimationTimeline(): Phaser.Time.Timeline {
     const totalTween = 4;
     const flipSpeed = this.config.options?.flipSpeed || 500;
@@ -67,7 +73,7 @@ export class Card extends Phaser.GameObjects.Container {
         at: duration * 2,
         tween: {
           targets: sprite,
-          scale: 1.1,
+          scale: 1.2,
           duration,
         },
       },
@@ -76,7 +82,7 @@ export class Card extends Phaser.GameObjects.Container {
         tween: {
           targets: sprite,
           scale: 1,
-          duration: duration / 4,
+          duration,
           onComplete: () => {
             this.isFlipping = false;
             this.isFaceUp = !this.isFaceUp;

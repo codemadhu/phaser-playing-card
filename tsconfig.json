@@ -6,6 +6,6 @@
     "outDir": "./lib",
     "strict": true
   },
-  "include": ["src"],
+  "include": ["src/objects/playing-card"],
   "exclude": ["node_modules", "**/__tests__/"]
 }
