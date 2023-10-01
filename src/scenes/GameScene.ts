@@ -1,5 +1,4 @@
 import { Card } from "../objects";
-
 export default class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: "game-scene" });

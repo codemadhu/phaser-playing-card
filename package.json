@@ -2,11 +2,13 @@
   "name": "phaser-playing-card",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "start": "webpack serve --mode development",
-    "build": "webpack --mode production",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -26,10 +28,10 @@
   },
   "homepage": "https://github.com/idomadhukar/phaser-playing-card#readme",
   "devDependencies": {
+    "phaser": "^3.60.0",
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "phaser": "^3.60.0",
     "@babel/core": "^7.21.4",
     "@babel/preset-env": "^7.21.4",
     "babel-loader": "^9.1.2",
@@ -42,5 +44,8 @@
     "webpack": "^5.77.0",
     "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^4.13.2"
-  }
+  },
+  "files": [
+    "lib/**/*"
+  ]
 }
