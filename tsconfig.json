@@ -4,7 +4,8 @@
     "module": "CommonJS",
     "declaration": true,
     "outDir": "./lib",
-    "strict": true
+    "strict": true,
+    "strictPropertyInitialization": false
   },
   "include": ["src/objects/playing-card"],
   "exclude": ["node_modules", "**/__tests__/"]
