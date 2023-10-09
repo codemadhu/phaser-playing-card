@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/idomadhukar/phaser-playing-card.git"
+    "url": "https://github.com/codemadhu/phaser-playing-card.git"
   },
   "keywords": [
     "phaser cards",
@@ -24,14 +24,10 @@
   "author": "Madhukar Thapa Magar <idomadhukar@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/idomadhukar/phaser-playing-card/issues"
+    "url": "https://github.com/codemadhu/phaser-playing-card/issues"
   },
-  "homepage": "https://github.com/idomadhukar/phaser-playing-card#readme",
+  "homepage": "https://github.com/codemadhu/phaser-playing-card#readme",
   "devDependencies": {
-    "phaser": "^3.60.0",
-    "typescript": "^5.2.2"
-  },
-  "dependencies": {
     "@babel/core": "^7.21.4",
     "@babel/preset-env": "^7.21.4",
     "babel-loader": "^9.1.2",
@@ -44,6 +40,10 @@
     "webpack": "^5.77.0",
     "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^4.13.2"
+  },
+  "dependencies": {
+    "phaser": "^3.60.0",
+    "typescript": "^5.2.2"
   },
   "files": [
     "lib/**/*"
