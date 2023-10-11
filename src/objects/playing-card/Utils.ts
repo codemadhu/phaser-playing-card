@@ -36,10 +36,3 @@ export const ORIGIN = {
     y: 1,
   },
 };
-
-export enum POSITIONS {
-  Top = "top",
-  Right = "right",
-  Bottom = "bottom",
-  Left = "left",
-}

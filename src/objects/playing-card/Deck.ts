@@ -1,18 +1,21 @@
-import { Card, Player, POSITIONS } from ".";
+import { Card, Player } from ".";
 
 export interface IDeckConfig {
   scene: Phaser.Scene;
   texture: string;
-  suitInitials: Array<string>;
+  suitPrefixes: {
+    club: string;
+    spade: string;
+    diamond: string;
+    heart: string;
+    joker?: string;
+  };
   backFaceTextureName: string;
   options?: {
     isFaceUp?: boolean;
-    xOffset?: number;
-    yOffset?: number;
+    xSpace?: number;
+    ySpace?: number;
     rotation?: number;
-    flipSpeed?: number;
-    flipZoom?: number;
-    allowJoker?: boolean;
   };
   onDeckClick?: (card: Card) => void;
   onCardFlipAnimationComplete?: (card: Card) => void;
@@ -36,8 +39,9 @@ export class Deck extends Phaser.GameObjects.GameObject {
     this._cards = [];
   }
 
-  public addTo(scene: Phaser.Scene, x: number, y: number) {
+  public appendTo(scene: Phaser.Scene, x: number, y: number) {
     this.createDeck(scene, x, y);
+    console.log(this._cards.length, this._cards);
   }
 
   public deal(config: ICardDealConfig) {
@@ -46,66 +50,34 @@ export class Deck extends Phaser.GameObjects.GameObject {
     const totalPlayers = config.players.length;
     const totalCount = config.totalCardsForEachPlayer * totalPlayers;
 
-    const dealEvent = this.scene.time.addEvent({
+    const dealTimerEvent = this.scene.time.addEvent({
       delay,
       callback: () => {
-        cardCount += 1;
         const currentPlayerIndex = cardCount % totalPlayers;
         const currentPlayer = config.players[currentPlayerIndex];
-
-        this.dealSingleCardTo({
-          player: currentPlayer,
-          onAnimationComplete: () => {
-            if (cardCount === totalCount) {
-              if (
-                currentPlayer.hand.length === config.totalCardsForEachPlayer
-              ) {
-                currentPlayer.arrangeCardsPosition();
-              }
-              dealEvent.remove(false);
-            }
-          },
-        });
+        if (cardCount === totalCount) {
+          dealTimerEvent.remove();
+          if (config.onDealComplete) config.onDealComplete();
+        } else {
+          const card = this._cards.pop();
+          if (card) currentPlayer.addCard(card);
+        }
+        cardCount += 1;
       },
       callbackScope: this,
       loop: true,
     });
   }
 
-  public dealSingleCardTo(config: {
-    player: Player;
-    options?: { duration?: number; ease?: string };
-    onAnimationComplete?: () => void;
-  }) {
-    const { x, y, position } = config.player.getProperties();
-    const { options } = config;
-    const rotation =
-      position === POSITIONS.Bottom || position === POSITIONS.Top ? 0 : 90;
-
-    if (this._cards.length > 0) {
-      const card = this._cards.pop();
-      if (card) {
-        card.moveTo({
-          x,
-          y,
-          rotation,
-          options,
-          onAnimationComplete: () => {
-            config.player.addCard(card);
-            if (config.onAnimationComplete) config.onAnimationComplete();
-          },
-        });
-      }
-    }
-  }
-
   public getTopCard(): Card {
     const card: Card = this._cards[this._cards.length - 1];
+    if (this._cards.length > 0) this._cards.pop();
     return card;
   }
 
   public isTopCard(card: Card): boolean {
     const topCard = this._cards[this._cards.length - 1].getProperties().name;
+
     if (card.getProperties().name === topCard) {
       return true;
     } else {
@@ -126,18 +98,23 @@ export class Deck extends Phaser.GameObjects.GameObject {
   }
 
   private createDeck(scene: Phaser.Scene, x: number, y: number) {
-    const totalCardsInSuit = 13;
-    const xOffset = this.config.options?.xOffset || 0;
-    const yOffset = this.config.options?.yOffset || 0;
+    const xSpace = this.config.options?.xSpace || 0;
+    const ySpace = this.config.options?.ySpace || 0;
     const rotation = this.config.options?.rotation || 0;
 
-    this.config.suitInitials.forEach((suit) => {
+    Object.entries(this.config.suitPrefixes).forEach((suitPrefix) => {
+      const suit = suitPrefix[0];
+      const prefix = suitPrefix[1];
+      const totalCardsInSuit = suit !== "joker" ? 13 : 2;
+
       for (let i = 0; i < totalCardsInSuit; i += 1) {
-        const frontFaceTextureName = `${suit}${i + 1}`;
+        const frontFaceTextureName = `${prefix}${i + 1}`;
+        const rank = suit !== "joker" ? i + 1 : 0;
+
         const card = new Card({
           scene: this.config.scene,
           suit,
-          rank: i + 1,
+          rank,
           graphics: {
             texture: this.config.texture,
             frontFaceTextureName,
@@ -153,7 +130,6 @@ export class Deck extends Phaser.GameObjects.GameObject {
         });
 
         this._cards.push(card);
-        scene.add.existing(card);
 
         if (this.config.onDeckClick) {
           card.on("pointerdown", () => {
@@ -162,19 +138,26 @@ export class Deck extends Phaser.GameObjects.GameObject {
         }
       }
     });
-    this.setCardsPosition(x, y, xOffset, yOffset, rotation);
+
+    // Shuffle and to scene
+    Phaser.Utils.Array.Shuffle(this._cards);
+    this._cards.forEach((card) => {
+      scene.add.existing(card);
+    });
+
+    this.setCardsPosition(x, y, xSpace, ySpace, rotation);
   }
 
   private setCardsPosition(
     x: number,
     y: number,
-    xOffset: number,
-    yOffset: number,
+    xSpace: number,
+    ySpace: number,
     rotation: number
   ) {
     this._cards.forEach((card, index) => {
-      card.x = x + xOffset * index;
-      card.y = y + yOffset * index;
+      card.x = x + xSpace * index;
+      card.y = y + ySpace * index;
       card.rotation = Phaser.Math.DegToRad(rotation * index);
     });
   }
