@@ -22,6 +22,7 @@ export interface ICardMoveAnimationConfig {
   x: number;
   y: number;
   rotation?: number;
+  scale?: number;
   options?: {
     duration?: number;
     ease?: string;
@@ -32,6 +33,7 @@ export interface ICardMoveAnimationConfig {
 export class Card extends Phaser.GameObjects.Sprite {
   private _isFaceUp: boolean;
   private _isFlipping: boolean;
+  private _isSelected: boolean;
   private _flipAnimationTimeline: Phaser.Time.Timeline;
   private _flipZoom: number;
 
@@ -39,6 +41,7 @@ export class Card extends Phaser.GameObjects.Sprite {
     super(config.scene, 0, 0, config.graphics.texture, "");
 
     this._isFaceUp = this.config.isFaceUp || false;
+    this._isSelected = false;
 
     const cardTexture = this._isFaceUp
       ? this.config.graphics.frontFaceTextureName
@@ -65,6 +68,15 @@ export class Card extends Phaser.GameObjects.Sprite {
     if (!this._isFlipping) this._flipAnimationTimeline.play();
   }
 
+  public showFace() {}
+
+  public selected(value?: boolean): boolean {
+    if (value !== undefined) {
+      this._isSelected = value;
+    }
+    return this._isSelected;
+  }
+
   public getProperties(): {
     name: string;
     suit: string;
@@ -79,6 +91,7 @@ export class Card extends Phaser.GameObjects.Sprite {
 
   public moveTo(config: ICardMoveAnimationConfig) {
     const { x, y } = config;
+    const scale = config.scale || this.scale;
     const rotation = config.rotation || 0;
     const duration = config.options?.duration || 500;
     const ease = config.options?.ease || "linear";
@@ -88,6 +101,7 @@ export class Card extends Phaser.GameObjects.Sprite {
       duration,
       x,
       y,
+      scale,
       rotation: Phaser.Math.DegToRad(rotation),
       ease,
       onComplete: () => {
