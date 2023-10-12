@@ -1,4 +1,4 @@
-import { Deck, ORIGIN, Player } from "../objects";
+import { Deck, Player } from "../objects";
 export default class GameScene extends Phaser.Scene {
   private players: Array<Player>;
   private stageWidth: number;
@@ -11,7 +11,6 @@ export default class GameScene extends Phaser.Scene {
 
   preload() {
     this.load.atlas("cards", "./assets/cards.png", "./assets/cards.json");
-    console.log("preloading");
   }
 
   create() {
@@ -31,12 +30,10 @@ export default class GameScene extends Phaser.Scene {
       x: this.stageWidth / 2,
       y: margin,
       rotation: 0,
-      isPlayer: true,
-      cardSettings: {
-        spacing: 40,
-        scale: 0.3,
-      },
+      isMainPlayer: false,
+      cardSettings: { spacing: 40, scale: 0.3 },
     });
+
     this.players.push(topPlayer);
 
     const rightPlayer = new Player({
@@ -45,11 +42,8 @@ export default class GameScene extends Phaser.Scene {
       x: this.stageWidth - margin,
       y: this.stageHeight / 2,
       rotation: -90,
-      isPlayer: true,
-      cardSettings: {
-        spacing: 40,
-        scale: 0.3,
-      },
+      isMainPlayer: false,
+      cardSettings: { spacing: 40, scale: 0.3 },
     });
     this.players.push(rightPlayer);
 
@@ -59,11 +53,18 @@ export default class GameScene extends Phaser.Scene {
       x: this.stageWidth / 2,
       y: this.stageHeight - margin,
       rotation: 0,
-      isPlayer: true,
-      cardSettings: {
-        scale: 0.4,
-        faceup: true,
-        spacing: 40,
+      isMainPlayer: true,
+      cardSettings: { spacing: 40, scale: 0.3, isFaceUp: true },
+    });
+
+    bottomPlayer.setCardThrowAnimation({
+      cardSpacing: 30,
+      isFaceUp: true,
+      animationOptions: {
+        x: bottomPlayer.x,
+        y: 400,
+        rotation: 0,
+        scale: 0.3,
       },
     });
     this.players.push(bottomPlayer);
@@ -74,50 +75,44 @@ export default class GameScene extends Phaser.Scene {
       x: margin,
       y: this.stageHeight / 2,
       rotation: 90,
-      isPlayer: true,
-      cardSettings: {
-        spacing: 40,
-        scale: 0.3,
-      },
+      isMainPlayer: false,
+      cardSettings: { spacing: 40, scale: 0.3 },
     });
 
     this.players.push(leftPlayer);
-    console.log("Left player hand", leftPlayer);
   }
 
   private createDeck() {
     const deck = new Deck({
       scene: this,
       texture: "cards",
-      suitPrefixes: {
-        heart: "heart",
-        spade: "spade",
-        club: "club",
-        diamond: "diamond",
-        joker: "joker",
+      textureNames: {
+        suits: {
+          heartPrefix: "hearts",
+          spadePrefix: "spades",
+          clubPrefix: "clubs",
+          diamondPrefix: "diamonds",
+          jokers: ["red_joker", "black_joker"],
+        },
+        backside: "back-side",
       },
-      backFaceTextureName: "back-black",
+
       options: {
         rotation: 0.2,
       },
       onDeckClick: () => {
-        this.players[2].removeCards(this.players[2].selectedCards, {
-          x: 200,
-          y: 200,
-          spacing: 50,
-          faceup: true,
-        });
-        // const topCard = deck.getTopCard();
-        // this.players[2].addCard(topCard);
+        this.players[2].removeCards(this.players[2].selectedCards);
+        this.players[2].addCard(deck.getTopCard());
       },
     });
 
     deck.appendTo(this, this.stageWidth / 2, this.stageHeight / 2);
     deck.setScale(0.4, 0.4);
+
     deck.deal({
-      totalCardsForEachPlayer: 5,
+      totalCardsToDeal: 5,
       players: this.players,
-      options: { delay: 50, ease: "Power3" },
+      options: { delay: 100, ease: "Power3" },
     });
   }
 }

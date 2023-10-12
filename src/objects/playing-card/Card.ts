@@ -1,7 +1,7 @@
 import "phaser";
-import { ORIGIN } from ".";
+import { Utils } from ".";
 
-export interface ICardConfig {
+export interface ICard {
   scene: Phaser.Scene;
   suit: string;
   rank: number;
@@ -18,7 +18,7 @@ export interface ICardConfig {
   };
 }
 
-export interface ICardMoveAnimationConfig {
+export interface ICardMoveAnimation {
   x: number;
   y: number;
   rotation?: number;
@@ -27,39 +27,45 @@ export interface ICardMoveAnimationConfig {
     duration?: number;
     ease?: string;
   };
-  onAnimationComplete?: (card: Card) => void;
+  onAnimationComplete?: (card?: Card) => void;
 }
 
 export class Card extends Phaser.GameObjects.Sprite {
-  private _isFaceUp: boolean;
+  public name: string;
+  public suit: string;
+  public rank: number;
+  public isFaceUp: boolean;
+
   private _isFlipping: boolean;
   private _isSelected: boolean;
   private _flipAnimationTimeline: Phaser.Time.Timeline;
   private _flipZoom: number;
 
-  constructor(private config: ICardConfig) {
+  constructor(private config: ICard) {
     super(config.scene, 0, 0, config.graphics.texture, "");
 
-    this._isFaceUp = this.config.isFaceUp || false;
+    this.name = config.graphics.frontFaceTextureName;
+    this.suit = config.suit;
+    this.rank = config.rank;
+    this.isFaceUp = config.isFaceUp || false;
+
     this._isSelected = false;
+    this._isFlipping = false;
+    this._flipZoom = config.animationOptions?.flipZoom || 0.1;
 
-    const cardTexture = this._isFaceUp
-      ? this.config.graphics.frontFaceTextureName
-      : this.config.graphics.backFaceTextureName;
+    const cardTexture = this.isFaceUp
+      ? config.graphics.frontFaceTextureName
+      : config.graphics.backFaceTextureName;
 
-    this.setTexture(this.config.graphics.texture, cardTexture);
+    this.setTexture(config.graphics.texture, cardTexture);
 
     const hitArea = new Phaser.Geom.Rectangle(0, 0, this.width, this.height);
     this.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
-
-    this._isFlipping = false;
-    this.name = this.config.graphics.frontFaceTextureName;
-    this._flipZoom = this.config.animationOptions?.flipZoom || 0.1;
   }
 
   public flip() {
     const { centerX, centerY } = this.getBounds();
-    this.setOrigin(ORIGIN.MiddleCenter.x, ORIGIN.MiddleCenter.y);
+    this.setOrigin(Utils.ORIGIN.MiddleCenter.x, Utils.ORIGIN.MiddleCenter.y);
 
     this.x = centerX;
     this.y = centerY;
@@ -68,7 +74,14 @@ export class Card extends Phaser.GameObjects.Sprite {
     if (!this._isFlipping) this._flipAnimationTimeline.play();
   }
 
-  public showFace() {}
+  public showFace(value: boolean) {
+    const { frontFaceTextureName, backFaceTextureName } = this.config.graphics;
+    const cardTexture = value ? frontFaceTextureName : backFaceTextureName;
+
+    this.setTexture(this.config.graphics.texture, cardTexture);
+
+    this.isFaceUp = value;
+  }
 
   public selected(value?: boolean): boolean {
     if (value !== undefined) {
@@ -77,26 +90,14 @@ export class Card extends Phaser.GameObjects.Sprite {
     return this._isSelected;
   }
 
-  public getProperties(): {
-    name: string;
-    suit: string;
-    rank: number;
-    isFaceUp: boolean;
-  } {
-    const { suit, rank } = this.config;
-    const isFaceUp = this._isFaceUp;
-    const name = this.name;
-    return { name, suit, rank, isFaceUp };
-  }
-
-  public moveTo(config: ICardMoveAnimationConfig) {
+  public moveTo(config: ICardMoveAnimation) {
     const { x, y } = config;
     const scale = config.scale || this.scale;
     const rotation = config.rotation || 0;
     const duration = config.options?.duration || 500;
     const ease = config.options?.ease || "linear";
 
-    this.scene.add.tween({
+    const animation = this.scene.add.tween({
       targets: this,
       duration,
       x,
@@ -105,6 +106,7 @@ export class Card extends Phaser.GameObjects.Sprite {
       rotation: Phaser.Math.DegToRad(rotation),
       ease,
       onComplete: () => {
+        animation.destroy();
         if (config.onAnimationComplete) config.onAnimationComplete(this);
       },
     });
@@ -136,7 +138,7 @@ export class Card extends Phaser.GameObjects.Sprite {
           onComplete: () => {
             const { texture, frontFaceTextureName, backFaceTextureName } =
               this.config.graphics;
-            const name = this._isFaceUp
+            const name = this.isFaceUp
               ? backFaceTextureName
               : frontFaceTextureName;
             this.setTexture(texture, name);
@@ -159,7 +161,7 @@ export class Card extends Phaser.GameObjects.Sprite {
           duration,
           onComplete: () => {
             this._isFlipping = false;
-            this._isFaceUp = !this._isFaceUp;
+            this.isFaceUp = !this.isFaceUp;
             if (this.config?.animationOptions?.onFlipAnimationComplete)
               this.config.animationOptions.onFlipAnimationComplete(this);
           },

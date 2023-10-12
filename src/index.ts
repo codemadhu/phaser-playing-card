@@ -1,5 +1,5 @@
 import "phaser";
-import GameScene from "./scenes/GameScene";
+import GameScene from "./example/GameScene";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -8,8 +8,8 @@ const config: Phaser.Types.Core.GameConfig = {
   zoom: 1,
   backgroundColor: "0xcccccc",
   input: {
-    keyboard: true,
-    gamepad: true,
+    keyboard: false,
+    gamepad: false,
   },
   disableContextMenu: true,
   scale: {
@@ -18,7 +18,7 @@ const config: Phaser.Types.Core.GameConfig = {
   render: {
     pixelArt: false,
     antialias: true,
-    antialiasGL: false,
+    antialiasGL: true,
   },
   physics: {
     default: "arcade",

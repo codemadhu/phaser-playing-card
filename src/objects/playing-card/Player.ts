@@ -1,123 +1,177 @@
-import { Card, ORIGIN } from ".";
+import { Card, ICardMoveAnimation, Utils } from ".";
 
-export interface IPlayerConfig {
+export interface IPlayer {
   scene: Phaser.Scene;
   name: string;
   x: number;
   y: number;
   rotation: number;
-  isPlayer: boolean;
+  isMainPlayer: boolean;
   cardSettings?: {
-    origin?: { x: number; y: number };
+    isFaceUp?: boolean;
     scale?: number;
-    faceup?: boolean;
+    rotation?: number;
     spacing?: number;
+    origin?: { x: number; y: number };
   };
 }
 
-export interface ICardMoveAnimation {
-  x: number;
-  y: number;
-  faceup: boolean;
-  spacing?: number;
-  scale?: number;
-  rotation?: number;
-  options?: {
-    duration?: number;
-    ease?: string;
-  };
-  onAnimationComplete?: () => void;
+export interface ICardAddRemoveAnimation {
+  isFaceUp: boolean;
+  cardSpacing: number;
+  animationOptions: ICardMoveAnimation;
 }
 
 export interface ICardArrangeAnimation {
   target: Card;
   x: number;
   y: number;
+  scale?: number;
   rotation?: number;
   duration?: number;
   ease?: number;
+  onComplete?: () => void;
 }
 
 export class Player extends Phaser.GameObjects.GameObject {
   public selectedCards: Array<Card>;
   public hand: Array<Card>;
+  public name: string;
+  public x: number;
+  public y: number;
+  public isFaceUp: boolean;
 
-  constructor(private config: IPlayerConfig) {
-    super(config.scene, "playing-card-player");
+  private _cardThrowAnimation: ICardAddRemoveAnimation;
+
+  constructor(private config: IPlayer) {
+    super(config.scene, "player");
+
     this.hand = [];
     this.selectedCards = [];
+    this.name = config.name;
+    this.x = config.x;
+    this.y = config.y;
+    this.isFaceUp = this.config?.cardSettings?.isFaceUp || false;
   }
 
-  public getProperties(): {
-    name: string;
-    x: number;
-    y: number;
-    faceup: boolean;
-  } {
-    const { name, x, y } = this.config;
-    const faceup = this.config.cardSettings?.faceup || false;
-
-    return { name, x, y, faceup };
+  public setCardThrowAnimation(config: ICardAddRemoveAnimation) {
+    this._cardThrowAnimation = config;
   }
 
   public addCards(cards: Array<Card>) {
-    cards.forEach((card) => {
+    cards.forEach((card, index) => {
       this.addCard(card);
     });
   }
 
   public addCard(card: Card) {
-    const { x, y, faceup } = this.getProperties();
-    const scale = this.config.cardSettings?.scale || 0;
-    const spacing = this.config.cardSettings?.spacing || 0;
+    const { x, y, isFaceUp } = this;
+    const scale = this.config?.cardSettings?.scale || 0;
+    const cardSpacing = this.config?.cardSettings?.spacing || 0;
+    const rotation = this.config.rotation || 0;
 
     card.removeAllListeners();
-    this.playCardMoveAnimation(card, {
-      x,
-      y,
-      scale,
-      spacing,
-      faceup,
-      onAnimationComplete: () => {
-        this.makeCardSelectable(card);
-        this.hand.push(card);
-        card.setDepth(this.hand.length + 1);
-        this.selectedCards = [];
+
+    this.hand.push(card);
+    card.setDepth(this.hand.length);
+
+    this.playCardMoveAnimation(card, this.hand.length - 1, {
+      isFaceUp,
+      cardSpacing,
+      animationOptions: {
+        x,
+        y,
+        scale,
+        rotation,
+        onAnimationComplete: () => {
+          this.makeCardSelectable(card);
+          this.selectedCards = [];
+          this.arrangeHandCards();
+        },
       },
     });
   }
 
-  public removeCards(cards: Array<Card>, animationConfig: ICardMoveAnimation) {
-    cards.forEach((card) => {
-      this.removeCard(card, animationConfig);
-    });
+  public removeCards(cards: Array<Card>) {
+    if (cards.length > 0) {
+      cards.forEach((card) => {
+        this.removeCard(card);
+      });
+    }
   }
 
-  public removeCard(card: Card, config: ICardMoveAnimation) {
-    const { x, y, scale, faceup, spacing, options } = config;
+  public removeCard(card: Card) {
+    if (card) {
+      const isFaceUp = this._cardThrowAnimation.isFaceUp;
+      const cardSpacing = this._cardThrowAnimation.cardSpacing;
 
-    card.removeAllListeners();
-    const cardIndex = this.hand.indexOf(card);
-    this.hand.splice(cardIndex, 1);
+      const { x, y, scale, rotation, onAnimationComplete } =
+        this._cardThrowAnimation.animationOptions;
 
-    this.playCardMoveAnimation(card, {
+      const index = this.selectedCards.indexOf(card);
+
+      card.removeAllListeners();
+
+      this.playCardMoveAnimation(card, index, {
+        isFaceUp,
+        cardSpacing,
+        animationOptions: {
+          x,
+          y,
+          scale,
+          rotation,
+          onAnimationComplete: () => {
+            Utils.removeCardFromArray(card, this.hand);
+            this.arrangeThrownCards(card);
+            if (onAnimationComplete) onAnimationComplete();
+          },
+        },
+      });
+    }
+  }
+
+  private arrangeHandCards() {
+    const { x, y } = this;
+    const scale = this.config?.cardSettings?.scale || 0;
+    const cardSpacing = this.config?.cardSettings?.spacing || 0;
+    const rotation = this.config.rotation || 0;
+
+    this.arrangeCardsPosition(this.hand, cardSpacing, x, y, scale, rotation);
+  }
+
+  private arrangeThrownCards(card: Card) {
+    const cardSpacing = this._cardThrowAnimation.cardSpacing;
+    const { x, y, scale, rotation, onAnimationComplete } =
+      this._cardThrowAnimation.animationOptions;
+
+    this.arrangeCardsPosition(
+      this.selectedCards,
+      cardSpacing,
       x,
       y,
       scale,
-      spacing,
-      faceup,
-      options,
-    });
+      rotation,
+      () => {
+        Utils.removeCardFromArray(card, this.selectedCards);
+        if (onAnimationComplete) onAnimationComplete();
+      }
+    );
   }
 
-  private arrangeCardsPosition() {
-    const spacing = this.config.cardSettings?.spacing || 30;
-    const handCardsWidth: number = this.hand.length * spacing;
+  private arrangeCardsPosition(
+    hand: Array<Card>,
+    cardSpacing: number,
+    x: number,
+    y: number,
+    scale?: number,
+    rotation?: number,
+    onAnimationComplete?: () => void
+  ) {
+    const spacing = cardSpacing;
+    const handCardsWidth: number = hand.length * spacing;
     const handCardsXPos: number = handCardsWidth / 2 - spacing / 2;
 
-    this.hand.forEach((card: Card, index: number) => {
-      const { rotation, x, y } = this.config;
-
+    hand.forEach((card: Card, index: number) => {
       const cardX: number =
         rotation === -90 || rotation === 90
           ? x
@@ -132,17 +186,23 @@ export class Player extends Phaser.GameObjects.GameObject {
         target: card,
         x: cardX,
         y: cardY,
+        scale,
         rotation,
+        onComplete: () => {
+          if (onAnimationComplete) onAnimationComplete();
+        },
       });
     });
   }
 
   private playCardArrangeAnimation(config: ICardArrangeAnimation) {
     const { target, x, y } = config;
+    const scale = config.scale || this.config.cardSettings?.scale;
     const rotation = config.rotation || 0;
     const duration = config.duration || 200;
     const ease = config.ease || "linear";
-    const origin = this.config.cardSettings?.origin || ORIGIN.MiddleCenter;
+    const origin =
+      this.config?.cardSettings?.origin || Utils.ORIGIN.MiddleCenter;
 
     target.setOrigin(origin.x, origin.y);
 
@@ -150,68 +210,72 @@ export class Player extends Phaser.GameObjects.GameObject {
       targets: target,
       x,
       y,
+      scale,
       rotation: Phaser.Math.DegToRad(rotation),
       ease,
       duration,
+      onComplete: () => {
+        if (config.onComplete) config.onComplete();
+      },
     });
   }
 
-  private playCardMoveAnimation(card: Card, config: ICardMoveAnimation) {
-    const { x, y, scale, faceup, options, rotation, onAnimationComplete } =
-      config;
+  private playCardMoveAnimation(
+    card: Card,
+    index: number,
+    config: ICardAddRemoveAnimation
+  ) {
+    const { cardSpacing, isFaceUp, animationOptions } = config;
+    const { x, y, scale, rotation, options, onAnimationComplete } =
+      animationOptions;
 
-    const cardSpacing = this.config.cardSettings?.spacing || 0;
-    const cardXPos = x + cardSpacing * (this.hand.length - 1);
+    const spacing = cardSpacing || 0;
 
-    const showFace = card.getProperties().isFaceUp !== faceup;
+    const cardXPos =
+      rotation === 90 || rotation === -90 ? x : x + spacing * index;
+
+    const carYPos =
+      rotation === 90 || rotation === -90 ? y + spacing * index : y;
 
     card.moveTo({
       x: cardXPos,
-      y,
+      y: carYPos,
       scale,
       rotation,
       options,
       onAnimationComplete: () => {
+        if (isFaceUp && !card.isFaceUp) card.flip();
         if (onAnimationComplete) onAnimationComplete();
-        if (showFace) card.flip();
-        this.arrangeCardsPosition();
       },
     });
   }
 
   private makeCardSelectable(card: Card) {
-    if (this.config.isPlayer) {
+    if (this.config.isMainPlayer) {
       card.on("pointerdown", () => {
-        if (!card.selected()) this.toggleCardSelection(card, true);
+        if (!card.selected()) this.toggleCardSelection(card);
       });
     }
   }
 
-  private toggleCardSelection(card: Card, playSelectionAnimation?: boolean) {
+  private toggleCardSelection(card: Card) {
     let cardXPos;
     let cardYPos;
 
     if (this.selectedCards.includes(card)) {
-      const index = this.selectedCards.indexOf(card);
       cardYPos = card.y + card.displayHeight / 2;
-
-      this.selectedCards.splice(index, 1);
+      Utils.removeCardFromArray(card, this.selectedCards);
     } else {
       cardYPos = card.y - card.displayHeight / 2;
-
       this.selectedCards.push(card);
     }
-
     cardXPos = card.x;
 
-    if (playSelectionAnimation) {
-      this.selectCardAnimation(card, cardXPos, cardYPos);
-    }
+    this.selectCardAnimation(card, cardXPos, cardYPos);
   }
 
   private selectCardAnimation(card: Card, x: number, y: number) {
     card.selected(true);
-
     this.scene.add.tween({
       targets: card,
       x,
