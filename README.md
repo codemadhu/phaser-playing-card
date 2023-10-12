@@ -2,7 +2,7 @@
 
 A playing card library based on PhaserJs
 ### Live Example
-https://github.com/codemadhu/phaser-playing-card
+[https://github.com/codemadhu/phaser-playing-card](https://codemadhu.github.io/phaser-playing-card/)
 
 ## Get Started
 
