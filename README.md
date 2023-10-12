@@ -1,6 +1,8 @@
 # PhaserJs Playing Card Library
 
 A playing card library based on PhaserJs
+### Live Example
+https://github.com/codemadhu/phaser-playing-card
 
 ## Get Started
 
