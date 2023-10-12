@@ -6,6 +6,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "start": "webpack serve --mode development",
+    "dev": "webpack"
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "npm run build"
